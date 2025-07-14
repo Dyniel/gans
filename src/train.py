@@ -46,11 +46,16 @@ def train(cfg: DictConfig):
         )
         metrics_callback = HistologyMetrics()
 
+        from pytorch_lightning.loggers import WandbLogger
+        wandb_logger = WandbLogger(project='gans-histopathology', name=cfg.model_name)
+
+
         trainer = pl.Trainer(
             max_epochs=100,
             gpus=1,
             callbacks=[checkpoint_callback, early_stopping_callback, metrics_callback],
-            logger=False # MLflow will handle logging
+            logger=wandb_logger
+
         )
 
         trainer.fit(model, datamodule)

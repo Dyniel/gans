@@ -69,6 +69,23 @@ python src/train.py -m model=dcgan,wgan_gp,stylegan2_ada
 ```
 This will launch three separate runs, one for each model. The logs for each run will be saved in a separate directory under `logs`.
 
+### Sweeps
+
+To run a hyperparameter sweep, you can use the `sweep.yaml` configuration file:
+```bash
+python src/train.py -m --config-name sweep
+```
+This will launch a sweep with the search space defined in `configs/sweep.yaml`.
+
+### MLflow Tracking
+
+By default, MLflow logs are saved to the `logs` directory. To use a different tracking URI, you can set the `MLFLOW_TRACKING_URI` environment variable:
+```bash
+export MLFLOW_TRACKING_URI=http://localhost:5000
+python src/train.py model=dcgan
+```
+
+
 ## Evaluation
 
 The training script uses MLflow to log the experiment results. To view the results, you can launch the MLflow UI:
@@ -79,7 +96,8 @@ This will launch a web server at http://localhost:5000 where you can view the ex
 
 ### Histo-QC Overlay
 
-For a qualitative evaluation of the generated patches, you can use the Histo-QC overlay. This involves overlaying the generated patches with quality control masks to check if the generated artifacts are consistent with the practice of a pathologist. A separate Jupyter notebook should be used for this analysis.
+For a qualitative evaluation of the generated patches, you can use the Histo-QC overlay. This involves overlaying the generated patches with quality control masks to check if the generated artifacts are consistent with the practice of a pathologist. An example notebook can be found at [notebooks/histo_qc_overlay.ipynb](notebooks/histo_qc_overlay.ipynb).
+
 
 ## Graph-based Module
 
@@ -99,4 +117,15 @@ To integrate the graph-based module into a GAN model, you need to:
 
 1.  **Extract the graph from the image:** Use the `detect_nuclei_centroids` and `build_graph` functions from `src/graph_builder.py` to extract the graph from the input image.
 2.  **Add a GNN block to the generator:** Add a `GraphBlock` to the generator architecture to process the graph and generate a graph-based feature map. This feature map can then be combined with the image-based feature map to generate the final image.
+
+    ```
+    Image Feature Map ----------------> |
+                                        | ----> Concatenate ----> Final Image
+    Graph Feature Map ----------------> |
+    ```
 3.  **Add a graph-based discriminator:** Add a parallel path to the discriminator to evaluate the consistency of the generated graph with the generated image. This can be done by adding a GNN block to the discriminator to process the graph and a classifier to predict whether the graph is real or fake.
+
+### Graph-based Metrics
+
+To evaluate the quality of the generated graphs, you can use graph-based metrics such as the Normalized Discounted Cumulative Gain (nDCG). The nDCG metric can be used to compare the ranking of the nodes in the generated graph with the ranking of the nodes in the real graph.
+

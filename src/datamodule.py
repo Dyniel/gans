@@ -39,7 +39,8 @@ class HistologyDataset(Dataset):
         return image
 
 class HistologyDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int = 32, img_size: int = 256):
+    def __init__(self, data_dir: str = 'data/lung', batch_size: int = 32, img_size: int = 256):
+
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -54,7 +55,8 @@ class HistologyDataModule(pl.LightningDataModule):
         ])
 
     def setup(self, stage=None):
-        self.dataset = HistologyDataset(self.data_dir, transform=self.transform)
+        self.dataset = HistologyDataset(self.data_dir, transform=self.transform, balance_classes=False)
+
 
     def train_dataloader(self):
         return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
