@@ -1,6 +1,7 @@
 import hydra
 from omegaconf import DictConfig
 import mlflow
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from datamodule import HistologyDataModule
