@@ -64,20 +64,35 @@ class DCGANLitModule(pl.LightningModule):
         real_imgs = batch
         batch_size = real_imgs.size(0)
 
-        # Train Generator
+        # -----------------------------------
+        # 1) Train Generator (optimizer_idx == 0)
+        # -----------------------------------
         if optimizer_idx == 0:
             z = torch.randn(batch_size, self.hparams.latent_dim, 1, 1, device=self.device)
             fake_imgs = self(z)
-            g_loss = self.criterion(self.discriminator(fake_imgs), torch.ones(batch_size, 1, 1, 1, device=self.device))
+            # discriminator output: [B,1,7,7]
+            pred_fake = self.discriminator(fake_imgs)
+            valid = torch.ones_like(pred_fake, device=self.device)
+            g_loss = self.criterion(pred_fake, valid)
             self.log('g_loss', g_loss, prog_bar=True)
             return g_loss
 
-        # Train Discriminator
+        # -----------------------------------
+        # 2) Train Discriminator (optimizer_idx == 1)
+        # -----------------------------------
         if optimizer_idx == 1:
+            # real
+            pred_real = self.discriminator(real_imgs)
+            valid = torch.ones_like(pred_real, device=self.device)
+            real_loss = self.criterion(pred_real, valid)
+
+            # fake
             z = torch.randn(batch_size, self.hparams.latent_dim, 1, 1, device=self.device)
             fake_imgs = self(z).detach()
-            real_loss = self.criterion(self.discriminator(real_imgs), torch.ones(batch_size, 1, 1, 1, device=self.device))
-            fake_loss = self.criterion(self.discriminator(fake_imgs), torch.zeros(batch_size, 1, 1, 1, device=self.device))
+            pred_fake = self.discriminator(fake_imgs)
+            fake = torch.zeros_like(pred_fake, device=self.device)
+            fake_loss = self.criterion(pred_fake, fake)
+
             d_loss = (real_loss + fake_loss) / 2
             self.log('d_loss', d_loss, prog_bar=True)
             return d_loss
@@ -89,9 +104,7 @@ class DCGANLitModule(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.hparams.lr
-        b1 = 0.5
-        b2 = 0.999
-
+        b1, b2 = 0.5, 0.999
         opt_g = optim.Adam(self.generator.parameters(), lr=lr, betas=(b1, b2))
         opt_d = optim.Adam(self.discriminator.parameters(), lr=lr, betas=(b1, b2))
         return [opt_g, opt_d], []
