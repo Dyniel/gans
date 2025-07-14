@@ -1,5 +1,5 @@
 model_name: dcgan
-data_dir: /path/to/your/data
+data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
 latent_dim: 512
 img_size: 256
 batch_size: 16
