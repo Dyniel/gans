@@ -85,6 +85,7 @@ export MLFLOW_TRACKING_URI=http://localhost:5000
 python src/train.py model=dcgan
 ```
 
+
 ## Evaluation
 
 The training script uses MLflow to log the experiment results. To view the results, you can launch the MLflow UI:
@@ -96,6 +97,7 @@ This will launch a web server at http://localhost:5000 where you can view the ex
 ### Histo-QC Overlay
 
 For a qualitative evaluation of the generated patches, you can use the Histo-QC overlay. This involves overlaying the generated patches with quality control masks to check if the generated artifacts are consistent with the practice of a pathologist. An example notebook can be found at [notebooks/histo_qc_overlay.ipynb](notebooks/histo_qc_overlay.ipynb).
+
 
 ## Graph-based Module
 
@@ -126,3 +128,4 @@ To integrate the graph-based module into a GAN model, you need to:
 ### Graph-based Metrics
 
 To evaluate the quality of the generated graphs, you can use graph-based metrics such as the Normalized Discounted Cumulative Gain (nDCG). The nDCG metric can be used to compare the ranking of the nodes in the generated graph with the ranking of the nodes in the real graph.
+

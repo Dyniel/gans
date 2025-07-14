@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 import wandb
+
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
 
@@ -43,6 +44,7 @@ class HistologyMetrics(pl.Callback):
                 trainer.logger.experiment.log({
                     "generated_images": [wandb.Image(img) for img in generated_images]
                 })
+
 
 
             # Reset metrics
