@@ -5,7 +5,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
 
 class HistologyMetrics(pl.Callback):
-    def __init__(self, feature_extractor='inception-v3-compat', kid_subsets=50, use_frechet_histology_distance=False):
+    def __init__(self, feature_extractor='inception_v3', kid_subsets=50, use_frechet_histology_distance=False):
         super().__init__()
         if use_frechet_histology_distance:
             # Placeholder for Frechet Histology Distance
