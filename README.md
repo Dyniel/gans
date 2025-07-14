@@ -1,54 +1,16 @@
 # gans
 
-## Data Management with DVC
-
-This project uses [DVC](https://dvc.org/) to manage the data. To use it, you need to have DVC installed and configured with a remote storage (e.g., S3, GCS, or a shared network drive).
-
-### Initial Setup
-
-1.  **Initialize DVC:**
-    ```bash
-    dvc init
-    ```
-
-2.  **Configure remote storage:**
-    Follow the instructions on the DVC documentation to configure your remote storage. For example, for S3:
-    ```bash
-    dvc remote add -d myremote s3://my-bucket/gans-data
-    ```
-
-### Data Pipeline
-
-1.  **Download the data:**
-    Download the BreakHis dataset from Kaggle and the CAMELYON16/17 datasets. Place them in a temporary directory.
-
-2.  **Extract patches:**
-    Use the `extract_patches.py` script to extract patches from the whole-slide images.
-    ```bash
-    python extract_patches.py --wsi_dir /path/to/wsis --output_dir data/raw
-    ```
-
-3.  **Add data to DVC:**
-    ```bash
-    dvc add data/raw
-    ```
-
-4.  **Push data to remote storage:**
-    ```bash
-    dvc push
-    ```
-
-### Getting the data
-
-To get the data, simply run:
-```bash
-dvc pull
-```
-This will download the data from the remote storage and place it in the `data/raw` directory.
-
 ## Training
 
 To train the models, you can use the `train.py` script. The script is configured to use Hydra for configuration management and MLflow for experiment tracking.
+
+### Data Configuration
+
+Before running the training, you need to configure the path to your local data in the `configs/dcgan.yaml` file. Open the file and set the `data_dir` parameter to the absolute path of your data directory. For example:
+
+```yaml
+data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
+```
 
 ### Single run
 
@@ -56,7 +18,7 @@ To train a single model, you can run the following command:
 ```bash
 python src/train.py model=dcgan
 ```
-This will train the DCGAN model with the default configuration specified in `configs/dcgan.yaml`. You can override the configuration parameters from the command line, for example:
+This will train the DCGAN model with the configuration specified in `configs/dcgan.yaml`. You can override the configuration parameters from the command line, for example:
 ```bash
 python src/train.py model=dcgan batch_size=32
 ```
@@ -128,4 +90,3 @@ To integrate the graph-based module into a GAN model, you need to:
 ### Graph-based Metrics
 
 To evaluate the quality of the generated graphs, you can use graph-based metrics such as the Normalized Discounted Cumulative Gain (nDCG). The nDCG metric can be used to compare the ranking of the nodes in the generated graph with the ranking of the nodes in the real graph.
-
