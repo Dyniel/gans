@@ -1,4 +1,5 @@
 model_name: dcgan
+data_dir: /path/to/your/data
 latent_dim: 512
 img_size: 256
 batch_size: 16
