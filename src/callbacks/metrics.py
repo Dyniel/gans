@@ -1,5 +1,7 @@
 import pytorch_lightning as pl
 import wandb
+from torchvision.models import inception_v3
+import torch
 
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
@@ -12,6 +14,10 @@ class HistologyMetrics(pl.Callback):
             # self.fhd = ...
             pass
         else:
+            if feature_extractor == 'inception_v3':
+                feature_extractor = inception_v3(pretrained=True)
+                feature_extractor.fc = torch.nn.Identity()
+
             self.fid = FrechetInceptionDistance(feature=feature_extractor)
             self.kid = KernelInceptionDistance(feature=feature_extractor, subset_size=kid_subsets)
         self.use_frechet_histology_distance = use_frechet_histology_distance
