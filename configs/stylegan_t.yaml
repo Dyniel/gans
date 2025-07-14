@@ -1,0 +1,7 @@
+model_name: stylegan_t
+latent_dim: 512
+img_size: 256
+batch_size: 16
+optimizer: adam
+lr: 0.0002
+cfg: small_data
