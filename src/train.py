@@ -17,7 +17,7 @@ def train(cfg: DictConfig):
     with mlflow.start_run():
         mlflow.log_params(cfg)
 
-        datamodule = HistologyDataModule(data_dir=hydra.utils.get_original_cwd() + "/data", batch_size=cfg.batch_size, img_size=cfg.img_size)
+        datamodule = HistologyDataModule(data_dir=cfg.data_dir, batch_size=cfg.batch_size, img_size=cfg.img_size)
 
         # Initialize the model
         if cfg.model_name == 'dcgan':
