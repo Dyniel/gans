@@ -12,37 +12,16 @@ from torchmetrics.image.kid import KernelInceptionDistance
 import wandb
 from contextlib import nullcontext
 import torch.cuda.amp as amp
-
+from contextlib import nullcontext
+import torch
 from ganformer_modules import Generator, Discriminator
 
 
+def ema_avg(a, b, _):
+    return a * 0.999 + b * 0.001
+
+
 class GANformerLit(pl.LightningModule):
-    def __init__(
-        self,
-        img_size: int = 16, # Uproszczenie: stały rozmiar
-        latent_dim: int = 128,
-        embed_dim: int = 256,
-        num_heads: int = 4,
-        ff_dim: int = 1024,
-        num_blocks: int = 4,
-        lr: float = 2e-4,
-    ):
-        super().__init__()
-        self.save_hyperparameters()
-
-        # --- sieci --- #
-        self.G = Generator(latent_dim, embed_dim, num_heads, ff_dim, num_blocks)
-        self.D = Discriminator(embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim, num_blocks=num_blocks)
-        self.ema = AveragedModel(self.G, avg_fn=lambda a, b, _: a * 0.999 + b * 0.001)
-
-        # --- straty --- #
-        self.bce = nn.BCEWithLogitsLoss()
-
-        # --- metryki --- #
-        self.fid = FrechetInceptionDistance(feature=64, normalize=True)
-        # mały subset_size ⇒ brak błędu przy małej walidacji
-        self.kid = KernelInceptionDistance(subset_size=50, normalize=True)
-
     # --------------------------------------------------------- #
     # Forward = generowanie
     def forward(self, z):
@@ -65,9 +44,12 @@ class GANformerLit(pl.LightningModule):
         self.automatic_optimization = False
 
         # --- sieci --- #
-        self.G = Generator(latent_dim, embed_dim, num_heads, ff_dim, num_blocks)
-        self.D = Discriminator(embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim, num_blocks=num_blocks)
-        self.ema = AveragedModel(self.G, avg_fn=lambda a, b, _: a * 0.999 + b * 0.001)
+        self.G = Generator(latent_dim, img_size, embed_dim, num_heads, ff_dim, num_blocks)
+        self.D = Discriminator(img_size=img_size, embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim,
+                               num_blocks=num_blocks)
+
+
+        self.ema = AveragedModel(self.G, avg_fn=ema_avg)
 
         # --- straty --- #
         self.bce = nn.BCEWithLogitsLoss()
@@ -128,13 +110,12 @@ class GANformerLit(pl.LightningModule):
         fake_u8 = self._to_uint8(fake)
 
 
-        amp_off = amp.autocast(False) if amp.is_autocast_enabled() else nullcontext()
+        amp_off = amp.autocast(enabled=False) if torch.is_autocast_enabled() else nullcontext()
         with amp_off:
             self.fid.update(real_u8, real=True)
             self.fid.update(fake_u8, real=False)
             self.kid.update(real_u8, real=True)
             self.kid.update(fake_u8, real=False)
-
         # --- W&B – raz na epokę (batch_idx == 0) --- #
         if batch_idx == 0 and isinstance(self.logger, pl.loggers.WandbLogger):
             grid_r = torchvision.utils.make_grid(real_u8[:9], nrow=3)

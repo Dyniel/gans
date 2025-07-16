@@ -30,12 +30,13 @@ class TransformerBlock(nn.Module):
 
 # Generator GANformera
 class Generator(nn.Module):
-    def __init__(self, latent_dim=128, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4, out_channels=3):
+    def __init__(self, latent_dim=128, img_size=16, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4, out_channels=3):
         super(Generator, self).__init__()
         self.entry = nn.Linear(latent_dim, embed_dim)
         self.blocks = nn.ModuleList([TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_blocks)])
-        self.out = nn.Linear(embed_dim, 16 * 16 * out_channels) # Uproszczenie: stały rozmiar wyjścia
+        self.out = nn.Linear(embed_dim, img_size * img_size * out_channels)
         self.out_channels = out_channels
+        self.img_size = img_size
 
     def forward(self, z):
         z = z.squeeze() # usunięcie wymiarów 1x1
@@ -45,13 +46,13 @@ class Generator(nn.Module):
             x = block(x)
         x = x.squeeze(0) # usunięcie wymiaru sekwencji
         x = self.out(x)
-        return x.view(-1, self.out_channels, 16, 16) # uproszczenie: stały rozmiar wyjścia
+        return x.view(-1, self.out_channels, self.img_size, self.img_size)
 
 # Dyskryminator GANformera
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=3, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4):
+    def __init__(self, in_channels=3, img_size=16, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4):
         super(Discriminator, self).__init__()
-        self.entry = nn.Linear(16 * 16 * in_channels, embed_dim) # Uproszczenie: stały rozmiar wejścia
+        self.entry = nn.Linear(img_size * img_size * in_channels, embed_dim)
         self.blocks = nn.ModuleList([TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_blocks)])
         self.out = nn.Linear(embed_dim, 1)
 
