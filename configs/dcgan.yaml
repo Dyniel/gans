@@ -1,14 +1,21 @@
-# Hydra configuration file
-# Usage: python src/train.py --config-name dcgan img_size=64 lr=1e-4
+# gans/configs/dcgan.yaml
+seed: 42
 
-# paths
-data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
+# -------- dataset / loader --------
+data:
+  data_dir: "/home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc"
+  img_size: 128
+  batch_size: 32
+  num_workers: 4
+  val_split: 0.05
 
-# training hyperparameters
-epochs: 100
-batch_size: 32
-img_size: 128       # power of two ≥32
-latent_dim: 128
-base_channels: 64
-lr: 0.0002
-num_workers: 4
+# -------- model --------
+model:
+  img_size: 128
+  latent_dim: 128
+  base_channels: 64
+  lr: 0.0002
+
+# -------- trainer --------
+gpus: 1        # ile GPU chcesz użyć
+max_epochs: 200
