@@ -1,0 +1,11 @@
+img_size: 16
+latent_dim: 128
+embed_dim: 256
+num_heads: 4
+ff_dim: 1024
+num_blocks: 4
+lr: 0.0002
+data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
+batch_size: 32
+num_workers: 4
+val_split: 0.05

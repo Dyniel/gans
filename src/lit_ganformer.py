@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Lightning-wrapper DC-GAN + EMA + FID/KID + W&B wizualizacje
+Lightning-wrapper GANformer + EMA + FID/KID + W&B wizualizacje
 """
 
 import torch, torch.nn as nn, torch.optim as optim, torchvision
@@ -13,23 +13,26 @@ import wandb
 from contextlib import nullcontext
 import torch.cuda.amp as amp
 
-from dcgan_modules import Generator, Discriminator
+from ganformer_modules import Generator, Discriminator
 
 
-class DCGANLit(pl.LightningModule):
+class GANformerLit(pl.LightningModule):
     def __init__(
         self,
-        img_size: int = 128,
+        img_size: int = 16, # Uproszczenie: stały rozmiar
         latent_dim: int = 128,
-        base_channels: int = 64,
+        embed_dim: int = 256,
+        num_heads: int = 4,
+        ff_dim: int = 1024,
+        num_blocks: int = 4,
         lr: float = 2e-4,
     ):
         super().__init__()
         self.save_hyperparameters()
 
         # --- sieci --- #
-        self.G = Generator(img_size, latent_dim, base_channels)
-        self.D = Discriminator(img_size, base_channels)
+        self.G = Generator(latent_dim, embed_dim, num_heads, ff_dim, num_blocks)
+        self.D = Discriminator(embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim, num_blocks=num_blocks)
         self.ema = AveragedModel(self.G, avg_fn=lambda a, b, _: a * 0.999 + b * 0.001)
 
         # --- straty --- #
@@ -49,9 +52,12 @@ class DCGANLit(pl.LightningModule):
     # TRAINING
     def __init__(
         self,
-        img_size: int = 128,
+        img_size: int = 16, # Uproszczenie: stały rozmiar
         latent_dim: int = 128,
-        base_channels: int = 64,
+        embed_dim: int = 256,
+        num_heads: int = 4,
+        ff_dim: int = 1024,
+        num_blocks: int = 4,
         lr: float = 2e-4,
     ):
         super().__init__()
@@ -59,8 +65,8 @@ class DCGANLit(pl.LightningModule):
         self.automatic_optimization = False
 
         # --- sieci --- #
-        self.G = Generator(img_size, latent_dim, base_channels)
-        self.D = Discriminator(img_size, base_channels)
+        self.G = Generator(latent_dim, embed_dim, num_heads, ff_dim, num_blocks)
+        self.D = Discriminator(embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim, num_blocks=num_blocks)
         self.ema = AveragedModel(self.G, avg_fn=lambda a, b, _: a * 0.999 + b * 0.001)
 
         # --- straty --- #
@@ -116,8 +122,11 @@ class DCGANLit(pl.LightningModule):
         fake = self.G(z)
 
         # --- uint8 & wyłączony autocast dla metryk --- #
-        real_u8 = self._to_uint8(real)
+        # Uproszczenie: zmiana rozmiaru obrazu do 16x16
+        real_resized = nn.functional.interpolate(real, size=(16,16), mode='bilinear', align_corners=False)
+        real_u8 = self._to_uint8(real_resized)
         fake_u8 = self._to_uint8(fake)
+
 
         amp_off = amp.autocast(False) if amp.is_autocast_enabled() else nullcontext()
         with amp_off:
