@@ -1,0 +1,19 @@
+seed: 42
+model_type: ganformer
+data:
+  data_dir: outputs
+  img_size: 256
+  batch_size: 32
+  num_workers: 0
+  val_split: 0.05
+model:
+  img_size: 256
+  latent_dim: 128
+  embed_dim: 256
+  num_heads: 4
+  ff_dim: 1024
+  num_blocks: 4
+  lr: 0.0002
+trainer:
+  epochs: 200
+  gpus: 1

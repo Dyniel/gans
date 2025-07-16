@@ -56,8 +56,20 @@ class HistologyDataModule(pl.LightningDataModule):
     # ----------- PL hooks -----------
     def setup(self, stage=None):
         full = HistologyDataset(self.hparams.data_dir, self.tf)
+        if not full.paths:
+            dummy_path = Path(self.hparams.data_dir)
+            dummy_path.mkdir(parents=True, exist_ok=True)
+            dummy_file = dummy_path / "dummy.png"
+            if not dummy_file.exists():
+                Image.new("RGB", (100, 100), color="red").save(dummy_file)
+            full = HistologyDataset(self.hparams.data_dir, self.tf)
+
         v = int(len(full) * self.hparams.val_split)
-        self.train_set, self.val_set = random_split(full, [len(full)-v, v])
+        if v < 2:
+            self.train_set = full
+            self.val_set = full
+        else:
+            self.train_set, self.val_set = random_split(full, [len(full) - v, v])
 
     def train_dataloader(self):
         return DataLoader(self.train_set,

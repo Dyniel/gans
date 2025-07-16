@@ -31,28 +31,24 @@ class GANformerLit(pl.LightningModule):
     # TRAINING
     def __init__(
         self,
-        img_size: int = 256, # Uproszczenie: stały rozmiar
-        latent_dim: int = 128,
-        embed_dim: int = 256,
-        num_heads: int = 4,
-        ff_dim: int = 1024,
-        num_blocks: int = 4,
-        lr: float = 2e-4,
+        img_size: int = 64,
+        latent_dim: int = 100,
+        ngf: int = 64,
+        ndf: int = 64,
+        lr: float = 0.0002,
     ):
         super().__init__()
         self.save_hyperparameters()
         self.automatic_optimization = False
 
         # --- sieci --- #
-        self.G = Generator(latent_dim, 16, img_size, embed_dim, num_heads, ff_dim, num_blocks)
-        self.D = Discriminator(img_size=img_size, embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim,
-                               num_blocks=num_blocks)
-
+        self.G = Generator(latent_dim, ngf, 3)
+        self.D = Discriminator(3, ndf)
 
         self.ema = AveragedModel(self.G, avg_fn=ema_avg)
 
         # --- straty --- #
-        self.bce = nn.BCEWithLogitsLoss()
+        self.bce = nn.BCELoss()
 
         # --- metryki --- #
         self.fid = FrechetInceptionDistance(feature=64, normalize=True)
