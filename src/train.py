@@ -23,7 +23,7 @@ def train(cfg: DictConfig):
     model = DCGANLit(**cfg.model)
 
     # ---------- logger ---------- #
-    wandb_logger = WandbLogger(project=cfg.wandb.project, name=cfg.wandb.name, offline=True)
+    wandb_logger = WandbLogger(project=cfg.wandb.project, name=cfg.wandb.name, offline=False)
 
     # ---------- trainer ---------- #
     trainer = pl.Trainer(

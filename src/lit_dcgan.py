@@ -11,8 +11,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.kid import KernelInceptionDistance
 import wandb
 from contextlib import nullcontext
-import torch.cuda.amp as amp
-
+from torch.cuda.amp import autocast
 from dcgan_modules import Generator, Discriminator
 
 
@@ -23,6 +22,7 @@ class DCGANLit(pl.LightningModule):
         latent_dim: int = 128,
         base_channels: int = 64,
         lr: float = 2e-4,
+        lr_d: float = 1e-4,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -61,8 +61,9 @@ class DCGANLit(pl.LightningModule):
             return g_loss
 
         # -------- D --------
-        pred_r = self.D(real)
-        pred_f = self.D(fake.detach())
+        noise = torch.randn_like(real) * 0.1
+        pred_r = self.D(real + noise)
+        pred_f = self.D(fake.detach() + noise)
         loss_r = self.bce(pred_r, torch.ones_like(pred_r))
         loss_f = self.bce(pred_f, torch.zeros_like(pred_f))
         d_loss = 0.5 * (loss_r + loss_f)
@@ -90,8 +91,7 @@ class DCGANLit(pl.LightningModule):
         real_u8 = self._to_uint8(real)
         fake_u8 = self._to_uint8(fake)
 
-        amp_off = amp.autocast(False) if amp.is_autocast_enabled() else nullcontext()
-        with amp_off:
+        with autocast(enabled=False):
             self.fid.update(real_u8, real=True)
             self.fid.update(fake_u8, real=False)
             self.kid.update(real_u8, real=True)
@@ -106,7 +106,7 @@ class DCGANLit(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         # obliczenia poza autocast
-        with amp.autocast(False):
+        with autocast(enabled=False):
             fid_val = self.fid.compute()
             kid_mean, kid_std = self.kid.compute()
         self.log_dict(
@@ -125,7 +125,7 @@ class DCGANLit(pl.LightningModule):
     # OPTIMIZERS
     def configure_optimizers(self):
         opt_g = optim.Adam(self.G.parameters(), lr=self.hparams.lr, betas=(0.5, 0.999))
-        opt_d = optim.Adam(self.D.parameters(), lr=self.hparams.lr, betas=(0.5, 0.999))
+        opt_d = optim.Adam(self.D.parameters(), lr=self.hparams.lr_d, betas=(0.5, 0.999))
         sch_g = StepLR(opt_g, step_size=30, gamma=0.5)
         sch_d = StepLR(opt_d, step_size=30, gamma=0.5)
         return [opt_g, opt_d], [sch_g, sch_d]

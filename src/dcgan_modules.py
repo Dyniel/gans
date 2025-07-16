@@ -10,7 +10,8 @@ import torch.nn as nn
 # ---------- pomocnicze bloki ---------- #
 def _g_block(in_ch: int, out_ch: int) -> nn.Sequential:
     return nn.Sequential(
-        nn.ConvTranspose2d(in_ch, out_ch, 4, 2, 1, bias=False),
+        nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+        nn.Conv2d(in_ch, out_ch, 3, 1, 1, bias=False),
         nn.BatchNorm2d(out_ch),
         nn.ReLU(True),
     )
