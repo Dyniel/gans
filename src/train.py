@@ -6,15 +6,16 @@ import hydra
 from omegaconf import DictConfig
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
+import wandb
 
 from lit_dcgan import DCGANLit
-from datamodule import HistologyDataModule  # <-- zakładam, że istnieje tak jak wcześniej
-
-pl.seed_everything(42, workers=True)
+from datamodule import HistologyDataModule
 
 
 @hydra.main(config_path="../configs", config_name="dcgan")
 def train(cfg: DictConfig):
+    pl.seed_everything(cfg.seed, workers=True)
+
     # ---------- dane ---------- #
     dm = HistologyDataModule(**cfg.datamodule)
 
@@ -22,21 +23,19 @@ def train(cfg: DictConfig):
     model = DCGANLit(**cfg.model)
 
     # ---------- logger ---------- #
-    wandb_logger = WandbLogger(project="gans-histopathology", name="dcgan_128")
+    wandb_logger = WandbLogger(project=cfg.wandb.project, name=cfg.wandb.name, offline=True)
 
     # ---------- trainer ---------- #
     trainer = pl.Trainer(
-        max_epochs=cfg.trainer.epochs,
-        accelerator="gpu",
-        devices=-1,               # wszystkie dostępne karty
-        precision=16,             # AMP
+        **cfg.trainer,
         logger=wandb_logger,
         log_every_n_steps=50,
         deterministic=True,
-        enable_checkpointing=False,  # uproszczenie
+        enable_checkpointing=False,
     )
 
     trainer.fit(model, dm)
+    wandb.finish()
 
 
 if __name__ == "__main__":

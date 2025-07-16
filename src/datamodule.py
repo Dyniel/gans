@@ -38,8 +38,8 @@ class HistologyDataModule(pl.LightningDataModule):
         data_dir: str,
         img_size: int = 128,
         batch_size: int = 32,
-        num_workers: int = 4,
-        val_split: float = 0.05,
+        workers: int = 4,
+        valid_split: float = 0.05,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -56,19 +56,19 @@ class HistologyDataModule(pl.LightningDataModule):
     # ----------- PL hooks -----------
     def setup(self, stage=None):
         full = HistologyDataset(self.hparams.data_dir, self.tf)
-        v = int(len(full) * self.hparams.val_split)
+        v = int(len(full) * self.hparams.valid_split)
         self.train_set, self.val_set = random_split(full, [len(full)-v, v])
 
     def train_dataloader(self):
         return DataLoader(self.train_set,
                           batch_size=self.hparams.batch_size,
                           shuffle=True,
-                          num_workers=self.hparams.num_workers,
+                          num_workers=self.hparams.workers,
                           pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
         return DataLoader(self.val_set,
                           batch_size=self.hparams.batch_size,
                           shuffle=False,
-                          num_workers=self.hparams.num_workers,
+                          num_workers=self.hparams.workers,
                           pin_memory=torch.cuda.is_available())
