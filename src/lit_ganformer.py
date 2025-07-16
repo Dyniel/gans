@@ -31,7 +31,7 @@ class GANformerLit(pl.LightningModule):
     # TRAINING
     def __init__(
         self,
-        img_size: int = 16, # Uproszczenie: stały rozmiar
+        img_size: int = 256, # Uproszczenie: stały rozmiar
         latent_dim: int = 128,
         embed_dim: int = 256,
         num_heads: int = 4,
@@ -44,7 +44,7 @@ class GANformerLit(pl.LightningModule):
         self.automatic_optimization = False
 
         # --- sieci --- #
-        self.G = Generator(latent_dim, img_size, embed_dim, num_heads, ff_dim, num_blocks)
+        self.G = Generator(latent_dim, 16, img_size, embed_dim, num_heads, ff_dim, num_blocks)
         self.D = Discriminator(img_size=img_size, embed_dim=embed_dim, num_heads=num_heads, ff_dim=ff_dim,
                                num_blocks=num_blocks)
 
@@ -104,9 +104,7 @@ class GANformerLit(pl.LightningModule):
         fake = self.G(z)
 
         # --- uint8 & wyłączony autocast dla metryk --- #
-        # Uproszczenie: zmiana rozmiaru obrazu do 16x16
-        real_resized = nn.functional.interpolate(real, size=(16,16), mode='bilinear', align_corners=False)
-        real_u8 = self._to_uint8(real_resized)
+        real_u8 = self._to_uint8(real)
         fake_u8 = self._to_uint8(fake)
 
 

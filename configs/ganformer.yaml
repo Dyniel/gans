@@ -5,14 +5,14 @@ model_type: ganformer # <-- Nowy parametr
 # -------- dataset / loader --------
 data:
   data_dir: "/home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc"
-  img_size: 128
+  img_size: 256
   batch_size: 32
   num_workers: 0
   val_split: 0.05
 
 # -------- model --------
 model:
-  img_size: 128 # Uproszczenie: stały rozmiar
+  img_size: 256 # Uproszczenie: stały rozmiar
   latent_dim: 128
   embed_dim: 256
   num_heads: 4
