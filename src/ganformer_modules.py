@@ -30,40 +30,58 @@ class TransformerBlock(nn.Module):
 
 # Generator GANformera
 class Generator(nn.Module):
-    def __init__(self, latent_dim=128, img_size=16, final_img_size=256, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4, out_channels=3):
+    def __init__(self, latent_dim, ngf, out_channels=3):
         super(Generator, self).__init__()
-        self.entry = nn.Linear(latent_dim, embed_dim)
-        self.blocks = nn.ModuleList([TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_blocks)])
-        self.out = nn.Linear(embed_dim, img_size * img_size * out_channels)
-        self.out_channels = out_channels
-        self.img_size = img_size
-        self.final_img_size = final_img_size
-        self.upsample = nn.Upsample(scale_factor=final_img_size//img_size, mode='bilinear', align_corners=False)
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(latent_dim, ngf * 8, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 4 x 4
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 8 x 8
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 16 x 16
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            # state size. (ngf) x 32 x 32
+            nn.ConvTranspose2d(ngf, out_channels, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (out_channels) x 64 x 64
+        )
 
-    def forward(self, z):
-        z = z.squeeze() # usunięcie wymiarów 1x1
-        x = self.entry(z)
-        x = x.unsqueeze(0) # dodanie wymiaru sekwencji
-        for block in self.blocks:
-            x = block(x)
-        x = x.squeeze(0) # usunięcie wymiaru sekwencji
-        x = self.out(x)
-        x = x.view(-1, self.out_channels, self.img_size, self.img_size)
-        return self.upsample(x)
+    def forward(self, input):
+        return self.main(input)
 
 # Dyskryminator GANformera
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=3, img_size=256, embed_dim=256, num_heads=4, ff_dim=1024, num_blocks=4):
+    def __init__(self, in_channels, ndf):
         super(Discriminator, self).__init__()
-        self.entry = nn.Linear(img_size * img_size * in_channels, embed_dim)
-        self.blocks = nn.ModuleList([TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_blocks)])
-        self.out = nn.Linear(embed_dim, 1)
+        self.main = nn.Sequential(
+            # input is (in_channels) x 64 x 64
+            nn.Conv2d(in_channels, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
 
-    def forward(self, x):
-        x = x.view(x.size(0), -1)
-        x = self.entry(x)
-        x = x.unsqueeze(0) # dodanie wymiaru sekwencji
-        for block in self.blocks:
-            x = block(x)
-        x = x.squeeze(0) # usunięcie wymiaru sekwencji
-        return self.out(x).squeeze()
+    def forward(self, input):
+        return self.main(input).view(-1, 1).squeeze(1)

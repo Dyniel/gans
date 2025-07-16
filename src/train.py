@@ -29,21 +29,16 @@ def train(cfg: DictConfig):
     else:
         raise ValueError(f"Unknown model type: {cfg.model_type}")
 
-    # ---------- logger ---------- #
-    wandb_logger = WandbLogger(project="gans-histopathology", name=logger_name, mode="online")
-
     # ---------- trainer ---------- #
-    wandb_logger = WandbLogger(project="gans-histopathology", name=logger_name)
-
     trainer = pl.Trainer(
         max_epochs=cfg.trainer.epochs,
-        accelerator="gpu",
-        devices=-1,               # wszystkie dostępne karty
-        precision=16,             # AMP
-        logger=wandb_logger,
+        accelerator="cpu",
+        devices=1,
+        logger=False,
         log_every_n_steps=50,
         deterministic=True,
         enable_checkpointing=False,  # uproszczenie
+        limit_val_batches=0,
     )
 
     trainer.fit(model, dm)
