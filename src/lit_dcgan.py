@@ -7,7 +7,8 @@ import torch, torch.nn as nn, torch.optim as optim, torchvision
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import StepLR
 from torch.optim.swa_utils import AveragedModel
-from torchmetrics.image import FrechetInceptionDistance, KernelInceptionDistance
+from torchmetrics.image.fid import FrechetInceptionDistance
+from torchmetrics.image.kid import KernelInceptionDistance
 import wandb
 from contextlib import nullcontext
 import torch.cuda.amp as amp
@@ -37,7 +38,7 @@ class DCGANLit(pl.LightningModule):
         # --- metryki --- #
         self.fid = FrechetInceptionDistance(feature=64, normalize=True)
         # mały subset_size ⇒ brak błędu przy małej walidacji
-        self.kid = KernelInceptionDistance(subset_size=50, normalize=True)
+        self.kid = KernelInceptionDistance(subset_size=50, normalize=True, subsets=50)
 
     # --------------------------------------------------------- #
     # Forward = generowanie
@@ -100,21 +101,22 @@ class DCGANLit(pl.LightningModule):
         if batch_idx == 0 and isinstance(self.logger, pl.loggers.WandbLogger):
             grid_r = torchvision.utils.make_grid(real_u8[:9], nrow=3)
             grid_f = torchvision.utils.make_grid(fake_u8[:9], nrow=3)
-            self.logger.experiment.log(
-                {
-                    "real": wandb.Image(grid_r.permute(1, 2, 0).cpu().numpy()),
-                    "fake": wandb.Image(grid_f.permute(1, 2, 0).cpu().numpy()),
-                    "step": self.global_step,
-                }
-            )
+            self.logger.log_image("real", [grid_r])
+            self.logger.log_image("fake", [grid_f])
 
-    def validation_epoch_end(self, _):
+    def on_validation_epoch_end(self):
         # obliczenia poza autocast
         with amp.autocast(False):
             fid_val = self.fid.compute()
             kid_mean, kid_std = self.kid.compute()
         self.log_dict(
-            {"val_fid": fid_val, "val_kid_mean": kid_mean, "val_kid_std": kid_std},
+            {
+                "val_fid": fid_val,
+                "val_kid_mean": kid_mean,
+                "val_kid_std": kid_std,
+                "epoch": self.current_epoch,
+                "step": self.global_step,
+            },
             prog_bar=True,
         )
         self.fid.reset(); self.kid.reset()

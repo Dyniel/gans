@@ -1,0 +1,18 @@
+seed: 42
+datamodule:
+  data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
+  img_size: 128
+  batch_size: 32
+  workers: 4
+  valid_split: 0.05
+model:
+  img_size: 128
+  latent_dim: 128
+  base_channels: 64
+  lr: 0.0002
+trainer:
+  devices: 1
+  epochs: 1
+wandb:
+  project: gans-histopathology
+  name: dcgan_128
