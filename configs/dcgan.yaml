@@ -1,7 +1,14 @@
-model_name: dcgan
+# Hydra configuration file
+# Usage: python src/train.py --config-name dcgan img_size=64 lr=1e-4
+
+# paths
 data_dir: /home/student2/histo/data/lung_colon_image_set/lung_image_sets/lung_scc
-latent_dim: 512
-img_size: 256
-batch_size: 16
-optimizer: adam
+
+# training hyperparameters
+epochs: 100
+batch_size: 32
+img_size: 128       # power of two ≥32
+latent_dim: 128
+base_channels: 64
 lr: 0.0002
+num_workers: 4
