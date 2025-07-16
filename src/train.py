@@ -30,7 +30,7 @@ def train(cfg: DictConfig):
         raise ValueError(f"Unknown model type: {cfg.model_type}")
 
     # ---------- logger ---------- #
-    wandb_logger = WandbLogger(project="gans-histopathology", name=logger_name, mode="offline")
+    wandb_logger = WandbLogger(project="gans-histopathology", name=logger_name, mode="online")
 
     # ---------- trainer ---------- #
     wandb_logger = WandbLogger(project="gans-histopathology", name=logger_name)
